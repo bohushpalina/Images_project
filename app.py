@@ -1,68 +1,35 @@
-import os, zipfile, shutil, uuid
-from flask import Flask, render_template, request, redirect, url_for
+import os, uuid
+from flask import Flask, render_template, request
 from PIL import Image
+from io import BytesIO
+from concurrent.futures import ThreadPoolExecutor
 
 app = Flask(__name__)
-UPLOAD_FOLDER = "uploads"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+SUPPORTED = {'.jpg','.jpeg','.png','.gif','.bmp','.tif','.tiff','.pcx'}
 
-SUPPORTED = {'.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tif', '.tiff', '.pcx'}
-
-def extract_zip(file_path):
-    folder_name = os.path.join(UPLOAD_FOLDER, str(uuid.uuid4()))
-    os.makedirs(folder_name, exist_ok=True)
-    with zipfile.ZipFile(file_path, 'r') as zip_ref:
-        zip_ref.extractall(folder_name)
-    return folder_name
-
-def get_image_info(path):
+def get_info(file_storage):
     try:
-        with Image.open(path) as img:
-            width, height = img.size
-            dpi = img.info.get('dpi', (None, None))[0]
-            mode = img.mode
-            compression = img.info.get('compression', 'N/A')
-            depth = {
-                '1': 1, 'L': 8, 'P': 8, 'RGB': 24,
-                'RGBA': 32, 'CMYK': 32
-            }.get(mode, 'Unknown')
-            return [os.path.basename(path), f"{width}x{height}", dpi or 'N/A',
-                    f"{depth} bit", compression]
+        img = Image.open(file_storage)
+        w,h = img.size
+        dpi = img.info.get('dpi',(None,None))[0] or 'N/A'
+        depth = {'1':1,'L':8,'P':8,'RGB':24,'RGBA':32,'CMYK':32}.get(img.mode,'Unknown')
+        compression = img.info.get('compression','N/A')
+        img.close()
+        return [file_storage.filename,f"{w}x{h}",dpi,f"{depth} bit",compression]
     except Exception:
         return None
 
-def scan_folder(folder):
-    data = []
-    for root, _, files in os.walk(folder):
-        for name in files:
-            ext = os.path.splitext(name)[1].lower()
-            if ext in SUPPORTED:
-                info = get_image_info(os.path.join(root, name))
-                if info:
-                    data.append(info)
-    return data
-
-@app.route("/", methods=["GET", "POST"])
+@app.route("/", methods=["GET","POST"])
 def index():
+    data = []
     if request.method == "POST":
-        if 'zipfile' not in request.files:
-            return redirect(url_for('index'))
-        file = request.files['zipfile']
-        if file.filename == '':
-            return redirect(url_for('index'))
-
-        zip_path = os.path.join(UPLOAD_FOLDER, file.filename)
-        file.save(zip_path)
-        folder = extract_zip(zip_path)
-        os.remove(zip_path)
-
-        data = scan_folder(folder)
-
-        # Чистим старые папки (необязательно, но чтобы не копилось)
-        shutil.rmtree(folder, ignore_errors=True)
-
+        folderfiles = request.files.getlist('folderfiles')
+        if folderfiles and folderfiles[0].filename != '':
+            with ThreadPoolExecutor(max_workers=12) as executor:  # 12 потоков для ускорения
+                results = executor.map(get_info, folderfiles)
+                data = [r for r in results if r]
         return render_template("index.html", data=data)
     return render_template("index.html", data=None)
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host="0.0.0.0", port=5000, debug=True)
