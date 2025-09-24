@@ -16,23 +16,20 @@
       align-items: center;
       padding: 30px 15px;
     }
-
     h1 {
       color: #ff7b00;
       font-weight: 700;
       text-shadow: 1px 1px 3px rgba(0,0,0,0.05);
       margin-bottom: 25px;
     }
-
     form {
       background: #fff;
       padding: 25px;
       border-radius: 12px;
       box-shadow: 0 8px 18px rgba(0,0,0,0.08);
       width: 100%;
-      max-width: 800px; /* немного больше */
+      max-width: 800px;
     }
-
     .custom-btn {
       background-color: #ff7b00;
       border: none;
@@ -42,40 +39,39 @@
       border-radius: 8px;
       transition: background-color 0.3s ease, transform 0.2s ease;
     }
-
     .custom-btn:hover {
       background-color: #e36e00;
       transform: translateY(-2px);
     }
-
     .table-container {
       width: 100%;
-      overflow-x: auto; /* горизонтальный скролл для широкой таблицы */
+      overflow-x: auto;
       margin-top: 30px;
     }
-
     table {
-      min-width: 900px; /* делаем таблицу шире */
+      min-width: 900px;
       background-color: #fff;
       border-radius: 10px;
       overflow: hidden;
       box-shadow: 0 6px 15px rgba(0,0,0,0.05);
     }
-
     thead {
       background-color: #ff7b00;
       color: #fff;
       font-weight: bold;
     }
-
     tbody tr:hover {
       background-color: #f9f9f9;
     }
-
     td, th {
       text-align: center;
       vertical-align: middle;
       padding: 10px 12px;
+    }
+    #file-count {
+      font-size: 0.9rem;
+      color: #777;
+      margin-top: 5px;
     }
   </style>
 </head>
@@ -85,7 +81,9 @@
   <form method="post" enctype="multipart/form-data">
     <div class="mb-3">
       <label class="form-label">Выберите папку с изображениями:</label>
-      <input class="form-control" type="file" name="folderfiles" webkitdirectory directory multiple>
+      <input class="form-control" type="file" name="folderfiles" 
+             webkitdirectory directory multiple title="">
+      <div id="file-count"></div>
     </div>
     <button type="submit" class="custom-btn">Сканировать</button>
   </form>
@@ -116,5 +114,14 @@
     </table>
   </div>
   {% endif %}
+
+  <script>
+    const input = document.querySelector('input[name="folderfiles"]');
+    const counter = document.getElementById('file-count');
+    input.addEventListener('change', e => {
+      const count = e.target.files.length;
+      counter.textContent = count ? `Выбрано файлов: ${count}` : '';
+    });
+  </script>
 </body>
 </html>
