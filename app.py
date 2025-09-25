@@ -24,7 +24,7 @@ def index():
     if request.method == "POST":
         folderfiles = request.files.getlist('folderfiles')
         if folderfiles and folderfiles[0].filename != '':
-            with ThreadPoolExecutor(max_workers=12) as executor:
+            with ThreadPoolExecutor(max_workers=30) as executor:
                 results = executor.map(get_info, folderfiles)
                 data = [r for r in results if r]
         return render_template("index.html", data=data)
