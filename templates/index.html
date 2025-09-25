@@ -115,13 +115,5 @@
   </div>
   {% endif %}
 
-  <script>
-    const input = document.querySelector('input[name="folderfiles"]');
-    const counter = document.getElementById('file-count');
-    input.addEventListener('change', e => {
-      const count = e.target.files.length;
-      counter.textContent = count ? `Выбрано файлов: ${count}` : '';
-    });
-  </script>
 </body>
 </html>
